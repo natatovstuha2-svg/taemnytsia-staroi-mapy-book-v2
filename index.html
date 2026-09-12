@@ -1,358 +1,492 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Таємниця старої мапи — прототип 2:3</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Таємниця старої мапи</title>
+  <style>
+    * { box-sizing: border-box; }
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    body {
+      margin: 0;
+      background: #dfe9eb;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      color: #17394a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 14px 28px;
+    }
 
-<style>
-:root{
-  --bg:#eef7f8;
-  --paper:#fffefc;
-  --ink:#20332f;
-  --accent:#0b756d;
-  --muted:#76837f;
-}
+    .reader {
+      width: min(96vw, 1500px);
+    }
 
-*{box-sizing:border-box}
+    .book-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      user-select: none;
+    }
 
-html,body{
-  width:100%;
-  height:100%;
-  margin:0;
-  overflow:hidden;
-}
+    .underlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+    }
 
-body{
-  background:var(--bg);
-  font-family:"Nunito Sans","Segoe UI",Arial,sans-serif;
-  color:var(--ink);
-}
+    .cover-stage,
+    .spread-stage {
+      position: absolute;
+      inset: 0;
+    }
 
-.reader{
-  width:100%;
-  height:100dvh;
-  display:grid;
-  grid-template-rows:minmax(0,1fr) 34px;
-  place-items:center;
-  padding:8px 8px 2px;
-}
+    .hidden {
+      display: none !important;
+    }
 
-.stage{
-  width:100%;
-  height:100%;
-  min-height:0;
-  display:grid;
-  place-items:center;
-  overflow:visible;
-}
+    .cover-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-/*
-  Одна сторінка має пропорцію 2:3.
-  Дві сторінки поруч = розворот 4:3.
-*/
-#book{
-  width:min(96vw, calc((100dvh - 52px) * 4 / 3));
-  height:min(calc(100dvh - 52px), calc(96vw * 3 / 4));
-  max-width:1365px;
-  max-height:1024px;
-}
+    .cover-image {
+      width: min(36%, 430px);
+      max-height: 88%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+    }
 
-.page{
-  position:relative;
-  overflow:hidden;
-  background:var(--paper);
-}
+    .spread-canvas {
+      position: absolute;
+      left: 4.5%;
+      top: 4.2%;
+      width: 91%;
+      height: 85.8%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 3%;
+    }
 
-/* ТВЕРДА ОБКЛАДИНКА */
-.cover-page{
-  width:100%;
-  height:100%;
-  background:transparent;
-  display:grid;
-  place-items:center;
-}
+    .page {
+      position: relative;
+      overflow: hidden;
+      padding: 3.8% 6.2% 4.5%;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+    }
 
-.cover-page img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  display:block;
-  user-select:none;
-  pointer-events:none;
-}
+    .page-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-/* ФОРЗАЦ */
-.endpaper{
-  width:100%;
-  height:100%;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(230,235,232,.25), transparent 38%),
-    #fbfbf8;
-}
+    .valley-overlay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 52%;
+      object-fit: cover;
+      opacity: 0.92;
+      pointer-events: none;
+      z-index: 1;
+    }
 
-/* ТЕКСТОВА СТОРІНКА */
-.text-page{
-  width:100%;
-  height:100%;
-  padding:9% 10% 8%;
-  background:
-    linear-gradient(90deg, rgba(0,0,0,.018), transparent 7%),
-    var(--paper);
-}
+    .title {
+      margin: 0 0 2px;
+      font-size: clamp(18px, 2vw, 31px);
+      line-height: 1.1;
+      font-weight: 700;
+      color: #0b7d7d;
+    }
 
-.text-page h1{
-  margin:0 0 5.2%;
-  font-size:clamp(24px,2.15vw,37px);
-  line-height:1.08;
-  font-weight:800;
-  color:var(--accent);
-}
+    .text {
+      font-size: clamp(14px, 1.45vw, 19px);
+      line-height: 1.48;
+      font-weight: 400;
+    }
 
-.text-page p{
-  margin:0 0 1.02em;
-  font-size:clamp(16px,1.16vw,20px);
-  line-height:1.52;
-  font-weight:400;
-}
+    .text p {
+      margin: 0 0 12px;
+    }
 
-.text-page p:last-child{
-  margin-bottom:0;
-}
+    .page-image {
+      margin-top: auto;
+      align-self: center;
+      width: 88%;
+      max-height: 46%;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.75);
+    }
 
-.dialogue{
-  font-weight:600 !important;
-}
+    .page-image.small {
+      width: 78%;
+      max-height: 31%;
+    }
 
-.page-number{
-  position:absolute;
-  bottom:3.3%;
-  font-size:12px;
-  color:var(--muted);
-}
+    .questions ol {
+      margin: 10px 0 0;
+      padding-left: 24px;
+    }
 
-.number-left{left:8.5%}
-.number-right{right:8.5%}
+    .questions li {
+      margin-bottom: 8px;
+    }
 
-/* ІЛЮСТРАТИВНА СТОРІНКА 2:3 — БЕЗ ОБРІЗАННЯ */
-.image-page{
-  width:100%;
-  height:100%;
-  background:#fff;
-  display:grid;
-  place-items:center;
-  overflow:hidden;
-}
+    .page-number {
+      position: absolute;
+      bottom: 2%;
+      font-size: clamp(12px, 1vw, 17px);
+      color: #758489;
+      z-index: 3;
+    }
 
-.image-page img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  display:block;
-  user-select:none;
-  pointer-events:none;
-}
+    .page.left .page-number { left: 6%; }
+    .page.right .page-number { right: 6%; }
 
-/*
-  Тонка внутрішня тінь біля корінця.
-  Не малюємо "книгу" під сторінками — сама сторінка і є книгою.
-*/
-.page::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  box-shadow:inset 0 0 14px rgba(30,45,42,.035);
-}
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
 
-.hint{
-  height:34px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  color:#667672;
-  user-select:none;
-}
+    button {
+      border: none;
+      background: #0b8d8d;
+      color: #fff;
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    }
 
-.hint strong{
-  color:var(--accent);
-}
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: #097d7d;
+    }
 
-@media(max-width:760px){
-  .reader{
-    grid-template-rows:minmax(0,1fr) 30px;
-    padding:4px 3px 1px;
-  }
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      box-shadow: none;
+    }
 
-  #book{
-    width:min(98vw, calc((100dvh - 40px) * 2 / 3));
-    height:min(calc(100dvh - 40px), calc(98vw * 3 / 2));
-  }
+    .indicator {
+      min-width: 120px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #35535f;
+    }
 
-  .text-page{
-    padding:8% 9%;
-  }
+    .hint {
+      margin: 12px 0 0;
+      text-align: center;
+      font-size: 15px;
+      color: #4e6a73;
+    }
 
-  .text-page h1{
-    font-size:clamp(18px,5vw,26px);
-  }
+    .fade-in {
+      animation: fadeIn 0.35s ease;
+    }
 
-  .text-page p{
-    font-size:clamp(13px,3.5vw,17px);
-    line-height:1.48;
-  }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-  .hint{
-    height:30px;
-    font-size:10px;
-  }
-}
-</style>
+    @media (max-width: 950px) {
+      .spread-canvas {
+        left: 5.2%;
+        top: 4.2%;
+        width: 89.6%;
+        height: 85.3%;
+        column-gap: 2.4%;
+      }
+
+      .page {
+        padding: 3.5% 5.2% 4.8%;
+      }
+
+      .page-image {
+        width: 92%;
+        max-height: 41%;
+      }
+
+      .indicator {
+        font-size: 18px;
+      }
+
+      button {
+        font-size: 18px;
+        padding: 12px 20px;
+      }
+    }
+  </style>
 </head>
-
 <body>
-<main class="reader">
+  <div class="reader">
+    <div class="book-stage">
+      <img id="underlay" class="underlay" src="00_book_start.png" alt="Книга" />
 
-  <section class="stage">
-    <div id="book">
+      <div id="coverStage" class="cover-stage fade-in">
+        <img class="cover-image" src="04_cover_front.png" alt="Обкладинка книги" />
+      </div>
 
-      <!-- 0. ПЕРЕДНЯ ОБКЛАДИНКА: ОКРЕМА ВЕРТИКАЛЬНА СТОРІНКА -->
-      <div class="page" data-density="hard">
-        <div class="cover-page">
-          <img src="04_cover_front.png" alt="Обкладинка книги «Таємниця старої мапи»">
+      <div id="spreadStage" class="spread-stage hidden">
+        <div class="spread-canvas fade-in">
+          <section id="leftPage" class="page left"></section>
+          <section id="rightPage" class="page right"></section>
         </div>
       </div>
-
-      <!-- 1. ВНУТРІШНЯ СТОРОНА ОБКЛАДИНКИ -->
-      <div class="page" data-density="soft">
-        <div class="endpaper"></div>
-      </div>
-
-      <!-- 2. ПЕРША ТЕКСТОВА СТОРІНКА -->
-      <div class="page" data-density="soft">
-        <article class="text-page">
-          <h1>Таємниця старої мапи</h1>
-
-          <p>
-            Одного сонячного дня Сашко й Дмитро гуляли біля річки.
-            Під корінням старої верби Сашко помітив пожовклий згорток.
-          </p>
-
-          <p>
-            Хлопці обережно розгорнули його — це була стара мапа.
-            На ній виднілися річка та стежка, що вела до невідомого яру.
-          </p>
-
-          <p class="dialogue">
-            — Перевіримо, куди вона веде? — запропонував Дмитро.
-          </p>
-
-          <span class="page-number number-right">1</span>
-        </article>
-      </div>
-
-      <!-- 3. НАША РЕАЛЬНА ГОТОВА ІЛЮСТРАЦІЯ 2:3 -->
-      <div class="page" data-density="soft">
-        <figure class="image-page">
-          <img src="05_scene_01_map_found.png" alt="Сашко й Дмитро знайшли стару мапу">
-          <span class="page-number number-left">2</span>
-        </figure>
-      </div>
-
-      <!-- 4. НАСТУПНА ТЕКСТОВА СТОРІНКА -->
-      <div class="page" data-density="soft">
-        <article class="text-page">
-          <p>
-            Біля берега стояв дерев’яний човен. Друзі сіли в нього й
-            попливли за маршрутом, позначеним на мапі.
-          </p>
-
-          <p>
-            Спочатку річка була широкою і спокійною. Та невдовзі береги
-            стали вищими, а попереду між скелями відкрився вузький прохід.
-          </p>
-
-          <p>
-            Один із хлопців веслував, другий стежив за напрямком.
-            Пригода вже почалася.
-          </p>
-
-          <span class="page-number number-right">3</span>
-        </article>
-      </div>
-
-      <!-- 5. ПУСТА СТОРІНКА — ЛИШЕ ДЛЯ ТЕСТУ НАСТУПНОГО ГОРТАННЯ -->
-      <div class="page" data-density="soft">
-        <div class="endpaper">
-          <span class="page-number number-left">4</span>
-        </div>
-      </div>
-
     </div>
-  </section>
 
-  <div class="hint">
-    <strong>Тягни за верхній або нижній кутик</strong>&nbsp;— аркуш має згинатися, а не відсікатися
+    <div class="controls">
+      <button id="prevBtn">← Назад</button>
+      <div id="indicator" class="indicator">Обкладинка</div>
+      <button id="nextBtn">Далі →</button>
+    </div>
+
+    <p class="hint">Книга-макет завжди залишається внизу, а зверху змінюється тільки вміст сторінок.</p>
   </div>
 
-</main>
+  <script>
+    const spreads = [
+      {
+        left: {
+          image: "05_scene_01_map_found.png",
+          paragraphs: [
+            "Одного сонячного дня Сашко й Дмитро гуляли біля річки. Під корінням старої верби вони знайшли пожовклий згорток — стару мапу.",
+            "На ній тягнулася звивиста річка, а тонка стежка вела до невідомої долини. Хлопці перезирнулися: попереду чекала пригода."
+          ]
+        },
+        right: {
+          image: "06_scene_02_boat_route.png",
+          paragraphs: [
+            "Біля берега стояв дерев’яний човен. Друзі сіли в нього й попливли за маршрутом, позначеним на мапі.",
+            "Спочатку річка була широкою і спокійною, та згодом береги стали вищими, а попереду між скелями відкрився вузький прохід."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "07_scene_03_ravine_arrival.png",
+          paragraphs: [
+            "Незабаром хлопці пристали до берега. Вони витягли човен на сушу й рушили стежкою крізь густі хащі.",
+            "Десь унизу чулося дзюрчання води, а попереду відкривалася тиха зелена долина."
+          ]
+        },
+        right: {
+          image: "08_scene_04_old_oak.png",
+          paragraphs: [
+            "За камінням вони побачили велетенський дуб. Його стовбур був таким широким, що Сашко й Дмитро навряд чи змогли б обійняти його вдвох.",
+            "Дуб здавався дуже старим, сильним і мудрим."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "09_scene_05_oak_problem.png",
+          paragraphs: [
+            "Та радість швидко змінилася тривогою. Частина листя на дубі вже тьмяніла, а біля коріння земля була сухою.",
+            "Друзі зрозуміли: дереву потрібна допомога."
+          ]
+        },
+        right: {
+          image: "10_scene_06_spring_found.png",
+          paragraphs: [
+            "Обійшовши схил, хлопці знайшли неподалік маленьке джерело. Вода була чиста й холодна.",
+            "Здавалося, саме воно колись живило землю біля старого дуба."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "11_scene_07_spring_blocked.png",
+          paragraphs: [
+            "Але вода ледве просочувалася крізь завал із гілок, листя й камінців. Джерело було майже перекрите.",
+            "Через це волога майже не доходила до коріння дуба."
+          ]
+        },
+        right: {
+          image: "12_scene_08_spring_cleaning.png",
+          paragraphs: [
+            "Сашко і Дмитро обережно почали розчищати струмок. Вони прибирали мокре листя, дрібні гілки й усе, що заважало воді.",
+            "Робота була нелегка, але друзі не здавалися."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "13_scene_09_water_flows.png",
+          paragraphs: [
+            "Нарешті вода побігла вільніше. Струмок заіскрився на сонці, задзюрчав голосніше й потік униз до долини.",
+            "Хлопці зраділи: джерело знову ожило."
+          ]
+        },
+        right: {
+          image: "14_scene_10_oak_recovery.png",
+          paragraphs: [
+            "Минуло трохи часу, і дуб наче ожив разом зі струмком. Листя стало свіжішим, а гілки знову зашелестіли від легкого вітру.",
+            "Добра справа дала свої плоди."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "15_scene_11_true_treasure.png",
+          paragraphs: [
+            "Тоді друзі зрозуміли: справжній скарб — це не золото і не коштовності.",
+            "Справжній скарб — побачити проблему, не пройти повз і зробити щось добре власними руками."
+          ]
+        },
+        right: {
+          image: "16_book_end.png",
+          paragraphs: [
+            "Сашко тримав у руках згорнуту мапу, а Дмитро усміхнувся:",
+            "— Схоже, вона й справді привела нас до скарбу.",
+            "Друзі повернулися до берега щасливі, бо цього дня врятували частинку живої природи."
+          ]
+        }
+      },
+      {
+        left: {
+          image: "16_book_end.png",
+          paragraphs: [
+            "Пригода завершилася, але її головний урок залишився з героями назавжди.",
+            "Справжня цінність — не в пошуках коштовностей, а в уважності, турботі й добрих вчинках."
+          ]
+        },
+        right: {
+          title: "Питання від головних героїв",
+          image: "17_questions_from_heroes.png",
+          imageClass: "small",
+          paragraphs: [
+            "Ми повернулися з пригоди. А тепер поміркуй разом із нами."
+          ],
+          questions: [
+            "Де Сашко й Дмитро знайшли стару мапу?",
+            "Куди привів їх маршрут?",
+            "Чому старий дуб почав всихати?",
+            "Що заважало джерелу живити дерево?",
+            "Що зробили хлопці, щоб допомогти дубу?",
+            "Чому добра справа виявилася справжнім скарбом?"
+          ]
+        }
+      }
+    ];
 
-<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+    let current = 0;
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
+    const underlay = document.getElementById("underlay");
+    const coverStage = document.getElementById("coverStage");
+    const spreadStage = document.getElementById("spreadStage");
+    const leftPage = document.getElementById("leftPage");
+    const rightPage = document.getElementById("rightPage");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const indicator = document.getElementById("indicator");
 
-  const book = document.getElementById("book");
+    function renderPage(target, data, pageNumber, side) {
+      const title = data.title ? `<h2 class="title">${data.title}</h2>` : "";
+      const paragraphs = (data.paragraphs || [])
+        .map(p => `<p>${p}</p>`)
+        .join("");
 
-  const pageFlip = new St.PageFlip(book, {
-    width: 512,
-    height: 768,
+      const questions = data.questions
+        ? `<div class="questions"><ol>${data.questions.map(q => `<li>${q}</li>`).join("")}</ol></div>`
+        : "";
 
-    size: "stretch",
-    minWidth: 256,
-    maxWidth: 512,
-    minHeight: 384,
-    maxHeight: 768,
+      const image = data.image
+        ? `<img class="page-image ${data.imageClass || ""}" src="${data.image}" alt="">`
+        : "";
 
-    showCover: true,
-    usePortrait: true,
-    autoSize: true,
-
-    drawShadow: true,
-    maxShadowOpacity: 0.30,
-    flippingTime: 1500,
-
-    useMouseEvents: true,
-    mobileScrollSupport: false,
-    swipeDistance: 25,
-
-    /* Клік у середині сторінки не гортає */
-    disableFlipByClick: true,
-
-    startPage: 0
-  });
-
-  pageFlip.loadFromHTML(
-    document.querySelectorAll("#book .page")
-  );
-
-  window.addEventListener("keydown", event => {
-    if(event.key === "ArrowRight"){
-      pageFlip.flipNext("bottom");
+      target.innerHTML = `
+        <img class="valley-overlay" src="18_page_overlay_valley.png" alt="">
+        <div class="page-content">
+          ${title}
+          <div class="text">
+            ${paragraphs}
+            ${questions}
+          </div>
+          ${image}
+        </div>
+        <div class="page-number">${pageNumber}</div>
+      `;
     }
 
-    if(event.key === "ArrowLeft"){
-      pageFlip.flipPrev("bottom");
+    function updateView() {
+      if (current === 0) {
+        underlay.src = "00_book_start.png";
+        coverStage.classList.remove("hidden");
+        spreadStage.classList.add("hidden");
+        indicator.textContent = "Обкладинка";
+      } else {
+        const spread = spreads[current - 1];
+        const leftNumber = current * 2;
+        const rightNumber = current * 2 + 1;
+
+        underlay.src = "01_book_spread.png";
+        coverStage.classList.add("hidden");
+        spreadStage.classList.remove("hidden");
+
+        renderPage(leftPage, spread.left, leftNumber, "left");
+        renderPage(rightPage, spread.right, rightNumber, "right");
+
+        indicator.textContent = `${current} / ${spreads.length}`;
+      }
+
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === spreads.length;
     }
-  });
 
-});
-</script>
+    prevBtn.addEventListener("click", () => {
+      if (current > 0) {
+        current--;
+        updateView();
+      }
+    });
 
+    nextBtn.addEventListener("click", () => {
+      if (current < spreads.length) {
+        current++;
+        updateView();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" && current < spreads.length) {
+        current++;
+        updateView();
+      }
+      if (e.key === "ArrowLeft" && current > 0) {
+        current--;
+        updateView();
+      }
+    });
+
+    updateView();
+  </script>
 </body>
 </html>
