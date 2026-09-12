@@ -3,13 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Таємниця старої мапи — тест книги</title>
+<title>Таємниця старої мапи — тест геометрії книги</title>
 
 <style>
 :root{
   --bg:#eef7f8;
-  --ink:#17332d;
-  --accent:#0b7b72;
 }
 
 *{box-sizing:border-box}
@@ -24,7 +22,6 @@ html,body{
 body{
   background:var(--bg);
   font-family:"Nunito Sans","Segoe UI",Arial,sans-serif;
-  color:var(--ink);
 }
 
 .reader{
@@ -32,82 +29,77 @@ body{
   height:100dvh;
   display:grid;
   place-items:center;
-  padding:8px;
+  padding:6px;
 }
 
-.book-stage{
+.stage{
   position:relative;
   width:min(96vw, calc(94dvh * 1.5));
-  max-width:1500px;
-  aspect-ratio:3 / 2;
+  max-width:1536px;
+  aspect-ratio:3/2;
   perspective:2600px;
   isolation:isolate;
 }
 
-/* Нерухома палітурка відкритої книги */
-.book-base{
+/* Нерухома основа книги */
+.base{
   position:absolute;
   inset:0;
   width:100%;
   height:100%;
   object-fit:contain;
-  pointer-events:none;
   user-select:none;
-  opacity:0;
-  transition:opacity .28s ease;
-  filter:drop-shadow(0 18px 30px rgba(20,45,50,.18));
+  pointer-events:none;
+  filter:drop-shadow(0 16px 28px rgba(20,45,50,.18));
   z-index:1;
 }
 
-.book-stage.open .book-base{
-  opacity:1;
-}
-
-/* Справжні сторінки PageFlip лежать поверх палітурки */
+/*
+  ВАЖЛИВО:
+  Це реальна внутрішня зона сторінок,
+  виміряна від нашого 01_book_spread.png.
+  Вона майже повністю заповнює паперовий блок книги,
+  але не залазить на синю палітурку.
+*/
 #book{
   position:absolute;
-  left:5.3%;
-  top:4.3%;
-  width:89.4%;
-  height:91.2%;
+  left:4.25%;
+  top:2.45%;
+  width:91.50%;
+  height:93.10%;
   z-index:10;
 }
 
-/* Сторінка */
+/* Сторінки */
 .page{
-  background:#fff;
   overflow:hidden;
+  background:#fff;
 }
 
-.blank-page{
+.paper{
   width:100%;
   height:100%;
   background:
-    linear-gradient(90deg,rgba(0,0,0,.025),transparent 7%,transparent 93%,rgba(0,0,0,.018)),
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,.020),
+      transparent 6%,
+      transparent 94%,
+      rgba(0,0,0,.014)
+    ),
     #fff;
-  position:relative;
 }
 
-.blank-page::after{
-  content:attr(data-page);
-  position:absolute;
-  bottom:2.5%;
-  right:5%;
-  font-size:12px;
-  color:#96a19e;
-}
-
-/* Передня обкладинка */
-.cover-page{
+/* Обкладинка */
+.cover{
   width:100%;
   height:100%;
   background:transparent;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display:grid;
+  place-items:center;
 }
 
-.cover-page img{
+.cover img{
   width:100%;
   height:100%;
   object-fit:contain;
@@ -116,7 +108,7 @@ body{
   pointer-events:none;
 }
 
-/* Кутики. Саме вони запускають клік-гортання */
+/* Невидимі активні кутики */
 .corner{
   position:absolute;
   width:8%;
@@ -128,60 +120,33 @@ body{
   cursor:pointer;
 }
 
-.corner.next.top{right:4.7%;top:4.6%}
-.corner.next.bottom{right:4.7%;bottom:4.6%}
-.corner.prev.top{left:4.7%;top:4.6%}
-.corner.prev.bottom{left:4.7%;bottom:4.6%}
+.corner.next.top{right:4.25%;top:2.45%}
+.corner.next.bottom{right:4.25%;bottom:4.45%}
+.corner.prev.top{left:4.25%;top:2.45%}
+.corner.prev.bottom{left:4.25%;bottom:4.45%}
 
-.corner::after{
-  content:"";
-  position:absolute;
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  opacity:.18;
-  background:var(--accent);
-  transition:opacity .15s ease, transform .15s ease;
-}
+.corner[hidden]{display:none}
 
-.corner.next::after{right:10px}
-.corner.prev::after{left:10px}
-.corner.top::after{top:10px}
-.corner.bottom::after{bottom:10px}
-
-.corner:hover::after{
-  opacity:.34;
-  transform:scale(1.15);
-}
-
-.corner[hidden]{
-  display:none;
-}
-
-.hint{
+/* маленька підказка, без крапок на сторінках */
+.note{
   position:absolute;
   left:50%;
-  bottom:-34px;
+  bottom:-28px;
   transform:translateX(-50%);
-  font-size:13px;
   color:#60716d;
+  font-size:12px;
   white-space:nowrap;
   user-select:none;
 }
 
-.hint strong{color:var(--accent)}
-
 @media(max-width:760px){
-  .book-stage{
+  .stage{
     width:min(98vw, calc(95dvh * 1.5));
   }
-  .hint{
-    font-size:11px;
-    bottom:-28px;
-  }
-  .corner::after{
-    width:15px;
-    height:15px;
+
+  .note{
+    font-size:10px;
+    bottom:-23px;
   }
 }
 </style>
@@ -189,10 +154,11 @@ body{
 
 <body>
 <main class="reader">
-  <section class="book-stage" id="stage">
+
+  <section class="stage">
 
     <img
-      class="book-base"
+      class="base"
       src="01_book_spread.png"
       alt=""
       aria-hidden="true"
@@ -200,49 +166,27 @@ body{
 
     <div id="book">
 
-      <!-- Обкладинка: окрема вертикальна сторінка -->
       <div class="page" data-density="hard">
-        <div class="cover-page">
-          <img src="04_cover_front.png" alt="Обкладинка книги Таємниця старої мапи">
+        <div class="cover">
+          <img src="04_cover_front.png" alt="Обкладинка книги">
         </div>
       </div>
 
-      <!-- Порожні сторінки лише для перевірки механіки -->
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="1"></div>
-      </div>
-
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="2"></div>
-      </div>
-
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="3"></div>
-      </div>
-
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="4"></div>
-      </div>
-
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="5"></div>
-      </div>
-
-      <div class="page" data-density="soft">
-        <div class="blank-page" data-page="6"></div>
-      </div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
+      <div class="page" data-density="soft"><div class="paper"></div></div>
 
     </div>
 
     <button class="corner next top" id="nextTop" aria-label="Наступна сторінка"></button>
     <button class="corner next bottom" id="nextBottom" aria-label="Наступна сторінка"></button>
-
     <button class="corner prev top" id="prevTop" aria-label="Попередня сторінка" hidden></button>
     <button class="corner prev bottom" id="prevBottom" aria-label="Попередня сторінка" hidden></button>
 
-    <div class="hint">
-      <strong>Гортай за кутик</strong> — мишею або дотиком
-    </div>
+    <div class="note">Гортай за верхній або нижній кутик сторінки</div>
 
   </section>
 </main>
@@ -251,40 +195,36 @@ body{
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const stage = document.getElementById("stage");
-
-  const nextTop = document.getElementById("nextTop");
-  const nextBottom = document.getElementById("nextBottom");
-  const prevTop = document.getElementById("prevTop");
-  const prevBottom = document.getElementById("prevBottom");
 
   const pageFlip = new St.PageFlip(
     document.getElementById("book"),
     {
-      width: 520,
-      height: 760,
+      /*
+        Співвідношення сторінки ~ 0.73.
+        Це відповідає реальній геометрії нашого відкритого розвороту.
+      */
+      width: 700,
+      height: 960,
 
       size: "stretch",
-      minWidth: 260,
-      maxWidth: 520,
-      minHeight: 380,
-      maxHeight: 760,
+      minWidth: 280,
+      maxWidth: 700,
+      minHeight: 384,
+      maxHeight: 960,
 
+      autoSize: false,
       showCover: true,
       usePortrait: true,
-      autoSize: true,
 
       drawShadow: true,
-      maxShadowOpacity: 0.34,
-      flippingTime: 1550,
+      maxShadowOpacity: 0.32,
+      flippingTime: 1500,
 
       useMouseEvents: true,
       mobileScrollSupport: false,
       swipeDistance: 25,
 
-      /* Клік у центрі не гортає */
       disableFlipByClick: true,
-
       startPage: 0
     }
   );
@@ -293,12 +233,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("#book .page")
   );
 
-  function updateState() {
+  const nextTop = document.getElementById("nextTop");
+  const nextBottom = document.getElementById("nextBottom");
+  const prevTop = document.getElementById("prevTop");
+  const prevBottom = document.getElementById("prevBottom");
+
+  function updateCorners(){
     const index = pageFlip.getCurrentPageIndex();
     const total = pageFlip.getPageCount();
-
-    /* Палітурка відкритої книги показується після обкладинки */
-    stage.classList.toggle("open", index > 0);
 
     const canPrev = index > 0;
     const canNext = index < total - 1;
@@ -311,21 +253,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   nextTop.addEventListener("click", () => pageFlip.flipNext("top"));
   nextBottom.addEventListener("click", () => pageFlip.flipNext("bottom"));
-
   prevTop.addEventListener("click", () => pageFlip.flipPrev("top"));
   prevBottom.addEventListener("click", () => pageFlip.flipPrev("bottom"));
 
-  pageFlip.on("flip", updateState);
-  pageFlip.on("changeOrientation", updateState);
-  pageFlip.on("changeState", updateState);
+  pageFlip.on("flip", updateCorners);
+  pageFlip.on("changeOrientation", updateCorners);
 
   window.addEventListener("keydown", event => {
-    if (event.key === "ArrowRight") pageFlip.flipNext("bottom");
-    if (event.key === "ArrowLeft") pageFlip.flipPrev("bottom");
+    if(event.key === "ArrowRight") pageFlip.flipNext("bottom");
+    if(event.key === "ArrowLeft") pageFlip.flipPrev("bottom");
   });
 
-  updateState();
+  updateCorners();
 });
 </script>
+
 </body>
 </html>
