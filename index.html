@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html> 
 <html lang="uk">
 <head>
 <meta charset="utf-8">
@@ -56,7 +56,7 @@ body{
 .cover-screen{
   position:absolute;
   inset:0;
-  z-index:50;
+  z-index:100;
   display:grid;
   place-items:center;
   background:var(--bg);
@@ -70,8 +70,8 @@ body{
 }
 
 .cover-object{
-  height:88%;
-  aspect-ratio:2 / 3;
+  width:min(34%, 390px);
+  aspect-ratio:560 / 820;
   cursor:pointer;
   filter:drop-shadow(0 16px 22px rgba(20,45,50,.24));
 }
@@ -289,7 +289,7 @@ body{
   position:absolute;
   top:50%;
   transform:translateY(-50%);
-  z-index:80;
+  z-index:40;
   width:40px;
   height:40px;
   border:0;
@@ -315,6 +315,30 @@ body{
 #prevBtn{left:-50px}
 #nextBtn{right:-50px}
 
+/* ---------- СТАН КНИГИ ----------
+   До натискання на обкладинку видно ТІЛЬКИ обкладинку.
+   Каркас, аркуші й стрілки фізично приховані. */
+.book-underlay,
+#flipbook,
+.nav{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.book-wrap.open .book-underlay,
+.book-wrap.open #flipbook{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+
+.book-wrap.open .nav{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+
 /* На невеликому екрані стрілки заходять усередину, але книгу не збільшують */
 @media(max-width:900px){
   .book-wrap{
@@ -333,7 +357,8 @@ body{
 
 @media(max-width:650px){
   .book-wrap{
-    width:min(98vw, calc(73dvh * 1.5));
+    width:96vw;
+    max-width:none;
   }
 
   .text-page{
@@ -363,7 +388,7 @@ body{
 <body>
 <main class="reader">
 
-  <section class="book-wrap">
+  <section id="bookWrap" class="book-wrap">
 
     <!-- На старті НЕ показуємо відкриту книгу під обкладинкою -->
     <div id="coverScreen" class="cover-screen">
@@ -381,13 +406,6 @@ body{
     >
 
     <div id="flipbook">
-
-      <!-- ТЕХНІЧНА НУЛЬОВА СТОРІНКА:
-           потрібна лише для правильної книжкової парності.
-           Користувач її не бачить. -->
-      <div class="flip-page" data-density="hard">
-        <div class="paper"></div>
-      </div>
 
       <!-- РОЗВОРОТ 1: ТЕКСТ ЛІВОРУЧ / ІЛЮСТРАЦІЯ ПРАВОРУЧ -->
       <div class="flip-page">
@@ -674,6 +692,7 @@ body{
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
+  const bookWrap = document.getElementById("bookWrap");
   const coverScreen = document.getElementById("coverScreen");
   const coverObject = document.getElementById("coverObject");
   const prevBtn = document.getElementById("prevBtn");
@@ -685,8 +704,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("flipbook"),
     {
       /*
-        Розмір аркуша підігнаний ПІД ВНУТРІШНЮ ГЕОМЕТРІЮ
-        саме 01_book_spread.png, а не під весь екран.
+        ВАЖЛИВО: книга завжди лишається ДВОСТОРІНКОВИМ розворотом,
+        навіть на телефоні. Інакше PageFlip розтягує одну сторінку
+        на ширину всього контейнера і маска "випадає" з книги.
       */
       width: 710,
       height: 950,
@@ -697,8 +717,8 @@ document.addEventListener("DOMContentLoaded", () => {
       minHeight: 401,
       maxHeight: 950,
 
-      showCover: true,
-      usePortrait: true,
+      showCover: false,
+      usePortrait: false,
       autoSize: false,
 
       drawShadow: true,
@@ -713,7 +733,7 @@ document.addEventListener("DOMContentLoaded", () => {
       disableFlipByClick: false,
 
       /* сторінка 0 технічна; перший реальний розворот = 1 + 2 */
-      startPage: 1
+      startPage: 0
     }
   );
 
@@ -721,21 +741,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("#flipbook .flip-page")
   );
 
-  function goToFirstSpread(){
-    if(typeof pageFlip.turnToPage === "function"){
-      pageFlip.turnToPage(1);
-    }
-  }
 
   function openBook(){
     opened = true;
+    bookWrap.classList.add("open");
     coverScreen.classList.add("hidden");
-    goToFirstSpread();
     updateButtons();
   }
 
   function closeBook(){
     opened = false;
+    bookWrap.classList.remove("open");
     coverScreen.classList.remove("hidden");
     updateButtons();
   }
@@ -769,7 +785,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const index = pageFlip.getCurrentPageIndex();
 
-    if(index <= 1){
+    if(index <= 0){
       closeBook();
       return;
     }
@@ -790,7 +806,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(event.key === "ArrowLeft"){
       if(!opened) return;
 
-      if(pageFlip.getCurrentPageIndex() <= 1){
+      if(pageFlip.getCurrentPageIndex() <= 0){
         closeBook();
       }else{
         pageFlip.flipPrev("bottom");
